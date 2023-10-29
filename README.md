@@ -1,4 +1,8 @@
-﻿# PostgreSQL in a string
+<p align="center">
+  <img src="https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/7f494f51-7f97-4812-8d9c-9156a0a4d2c9" />
+</p>
+  # PostgreSQL in a string
+
 
 This is a Visual Studio extensions that adds syntax highlighting for PostgreSQL syntax in C# string literals.
 
