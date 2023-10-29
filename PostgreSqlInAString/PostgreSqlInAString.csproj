@@ -62,7 +62,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Lexer\PostgreSqlLexer.g4" />
-    <None Include="README.md" />
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
