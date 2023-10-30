@@ -43,7 +43,7 @@ XML documentation comments (starting with `///` or `/**`) are ignored.
 
 ## Region rules
 
-Enable or disable highlighting in code regions with comment rules.
+Enable or disable highlighting in code regions with comment rules. A region rule will override highlighting of every string literal after it until the next rule or end of file.
 
 Short version:
 - `// strpsql-on `
@@ -53,16 +53,13 @@ Longer version:
 - `/* PostgreSqlInAString-enable */`
 - `/* PostgreSqlInAString-disable */`
 
-
 The rule parts can be mixed, e.g. `strpsql-enable` will work too.
-
-A region rule will override highlighting of every string literal after it until the next rule or end of file.
 
 XML documentation comments (starting with `///` or `/**`) are ignored.
 
 ## Project configuration
 
-To have the highlighting enabled by default for an entire project, add the following section in the `.csproj` file (or merge it with existing `ProjectExtensions` section).
+To have the highlighting enabled by default for an entire project, add the following section in the `.csproj` file (or merge it with existing `ProjectExtensions` element).
 ```
 <ProjectExtensions>
   <PostgreSqlInAString>
@@ -74,6 +71,7 @@ To have the highlighting enabled by default for an entire project, add the follo
 This may be useful when you have a separate data access project where most of the strings are database queries.
 
 ## Explanations
+
 Rules can contain explanations similar to what ESLint comment rules allow.
 
 To add an explanation to the rule, add two dashes after the rule name (separated by some whitespace) and place your explanation after the dashes.
