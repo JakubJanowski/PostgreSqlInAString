@@ -5,7 +5,7 @@
 # PostgreSQL in a string
 
 
-This is a Visual Studio extensions that adds syntax highlighting for PostgreSQL syntax in C# string literals.
+This is a Visual Studio extension that adds highlighting for PostgreSQL syntax in C# string literals.
 
 ![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/20878f6b-f245-476e-81b2-797a33c09395)
 
