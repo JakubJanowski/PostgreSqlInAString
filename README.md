@@ -7,7 +7,8 @@
 
 This is a Visual Studio extension that adds highlighting for PostgreSQL syntax in C# string literals.
 
-![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/20878f6b-f245-476e-81b2-797a33c09395)
+![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/195f854e-2113-4e05-9049-bc36689a4a58)
+
 
 Works with Visual Studio 2019 and Visual Studio 2022. Applies only to C# `.cs` files.
 
@@ -15,11 +16,10 @@ Supports regular quoted strings `""`, verbatim strings `@""`, interpolated strin
 
 Supports parametrized queries. Parameters prefixed with an `@` are colorized differently.
 
-![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/94f1fa75-03f2-492e-9fa7-2af0e5ecdeae)
-
 Correctly handles string escape sequences.
 
-![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/5b8faa97-68d0-4140-9a6b-41dc25cea79f)
+![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/c45c4a22-dc18-451f-8dde-44cadede9c80)
+
 
 PostgreSQL in a string uses an ANTLR 4 lexer to tokenize PostgreSQL syntax.
 
@@ -89,7 +89,7 @@ string str = "<select>" +
 string sql = /* PostgreSqlInAString -- hey, 
               *    this is an explanation
               *    that spans multiple lines
-              */@"TRUNCATE address, country, delivery_type, order_product, order, payment_type, product RESTART IDENTITY;";
+              */@"TRUNCATE address, order_product, order, product RESTART IDENTITY;";
 ```
 
 
