@@ -95,7 +95,7 @@ string sql = /* PostgreSqlInAString -- hey,
 
 # Highlighting configuration
 
-The default highlight colors were selected for VS dark theme but they can be customized in `Tools > Options > Environment > FontsAndColors > String SQL * [ - escape character]`
+The default highlight colors were selected for VS dark theme but they can be customized in `Tools > Options > Environment > Fonts and colors > String SQL * [ - escape character]`
 
 ![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/7b5ed2e4-240e-4348-afb8-8b3ed53e0631)
 
