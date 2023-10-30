@@ -2,7 +2,7 @@
   <img src="https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/7f494f51-7f97-4812-8d9c-9156a0a4d2c9" />
 </p>
 
-# PostgreSQL in a string
+# PostgreSQL in a String
 
 
 This is a Visual Studio extension that adds highlighting for PostgreSQL syntax in C# string literals.
@@ -21,7 +21,7 @@ Correctly handles string escape sequences.
 ![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/c45c4a22-dc18-451f-8dde-44cadede9c80)
 
 
-PostgreSQL in a string uses an ANTLR 4 lexer to tokenize PostgreSQL syntax.
+PostgreSQL in a String uses an ANTLR 4 lexer to tokenize PostgreSQL syntax.
 
 
 # How to enable and disable highlighting
