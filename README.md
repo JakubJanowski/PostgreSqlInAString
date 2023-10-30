@@ -13,7 +13,7 @@ Works with Visual Studio 2019 and Visual Studio 2022. Applies only to C# `.cs` f
 
 Supports regular quoted strings `""`, verbatim strings `@""`, interpolated strings `$""` and interpolated verbatim strings `$@""`. Does not support C#11 raw string literals yet (I plan on tackling this after .NET 8 comes out).
 
-Supports parametrized queries. Parameters prefixed with a `@` are colorized differently.
+Supports parametrized queries. Parameters prefixed with an `@` are colorized differently.
 
 ![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/94f1fa75-03f2-492e-9fa7-2af0e5ecdeae)
 
@@ -62,7 +62,7 @@ XML documentation comments (starting with `///` or `/**`) are ignored.
 
 ## Project configuration
 
-To have the highlighting enabled by default for an entire project, add the following section in the .csproj file (or merge it with existing ProjectExtensions section).
+To have the highlighting enabled by default for an entire project, add the following section in the `.csproj` file (or merge it with existing `ProjectExtensions` section).
 ```
 <ProjectExtensions>
   <PostgreSqlInAString>
@@ -74,7 +74,9 @@ To have the highlighting enabled by default for an entire project, add the follo
 This may be useful when you have a separate data access project where most of the strings are database queries.
 
 ## Explanations
-Rules can contain explanations similar to what ESLint comment rules allow. To add an explanation to the rule, add two dashes after the rule name (separated by some whitespace) and place your explanation after the dashes.
+Rules can contain explanations similar to what ESLint comment rules allow.
+
+To add an explanation to the rule, add two dashes after the rule name (separated by some whitespace) and place your explanation after the dashes.
 
 ``` C#
 /* strpsql-off -- This is HTML */
@@ -102,7 +104,7 @@ The default highlight colors were selected for VS dark theme but they can be cus
 The default colors except for parameter color are a mix of 50% default string color and 50% default SQL token color. This means that the highlighted text will have an orange tint, which is by design, to not overwhelm you when combined with other C# syntax as it is still just a string.
 
 
-# Possible further improvements: 
+# Possible further improvements
 - autocompletion
 - light-mode-friendly color palette and auto-switching between palettes when mode is changed
 - basic error recognition (typos, unsupported keyword order, etc.) by using an ANTLR parser
