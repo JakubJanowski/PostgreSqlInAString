@@ -89,7 +89,7 @@ string str = "<select>" +
 string sql = /* PostgreSqlInAString -- hey, 
               *    this is an explanation
               *    that spans multiple lines
-              */@"TRUNCATE addresses, countries, delivery_types, order_products, orders, payment_types, products RESTART IDENTITY;";
+              */@"TRUNCATE address, country, delivery_type, order_product, order, payment_type, product RESTART IDENTITY;";
 ```
 
 
