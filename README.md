@@ -18,8 +18,7 @@ Supports parametrized queries. Parameters prefixed with an `@` are colorized dif
 
 Correctly handles string escape sequences.
 
-![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/c45c4a22-dc18-451f-8dde-44cadede9c80)
-
+![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/71ce4ccd-257f-4bff-aac0-beb717e2a0bb)
 
 PostgreSQL in a String uses an ANTLR 4 lexer to tokenize PostgreSQL syntax.
 
