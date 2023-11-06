@@ -4,11 +4,9 @@
 
 # PostgreSQL in a String
 
-
 This is a Visual Studio extension that adds highlighting for PostgreSQL syntax in C# string literals.
 
-![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/195f854e-2113-4e05-9049-bc36689a4a58)
-
+![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/b09afa46-1529-4f22-b8c4-9ddfec9d6181)
 
 Works with Visual Studio 2019 and Visual Studio 2022. Applies only to C# `.cs` files.
 
@@ -27,18 +25,19 @@ PostgreSQL in a String uses an ANTLR 4 lexer to tokenize PostgreSQL syntax.
 
 The extension does not automatically detect string literals with PostgreSQL syntax. The syntax highlighting must be explicitly enabled for a single string literal, a code region or whole project.
 
+> [!NOTE]
+> Rules inside XML documentation comments (starting with `///` or `/**`) are ignored.
+
 ## Inline rules
 
 Highlighting can be enabled inline by prefixing a string literal with a comment containing `strpsql` text or `PostgreSqlInAString` (if you prefer to be more explicit). Note that only block comments can be used as the comment must be directly adjacent to the beginning of string literal.
 ```C#
-string sql = /*strpsql*/@"SELECT COUNT(*) FROM product;";
+string sql = /*strpsql*/@"SELECT COUNT(*) FROM order;";
 ```
 When the string is inside enabled region, highlighting can be disabled inline by prefixing the string literal with a comment containing `strpsql-ignore` text or `PostgreSqlInAString-ignore` for a longer version.
 ```C#
 string text = /*strpsql-ignore*/"Just a regular string, no SQL here";
 ```
-
-XML documentation comments (starting with `///` or `/**`) are ignored.
 
 ## Region rules
 
@@ -53,8 +52,6 @@ Longer version:
 - `/* PostgreSqlInAString-disable */`
 
 The rule parts can be mixed, e.g. `strpsql-enable` will work too.
-
-XML documentation comments (starting with `///` or `/**`) are ignored.
 
 ## Project configuration
 
@@ -102,6 +99,8 @@ The default colors except for parameter color are a mix of 50% default string co
 
 
 # Possible further improvements
+- support raw string literals
+- handle PL/pgSQL in a string in a string
 - autocompletion
 - light-mode-friendly color palette and auto-switching between palettes when mode is changed
 - basic error recognition (typos, unsupported keyword order, etc.) by using an ANTLR parser
