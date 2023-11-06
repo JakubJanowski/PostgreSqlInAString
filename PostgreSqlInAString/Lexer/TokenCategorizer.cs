@@ -641,7 +641,7 @@ namespace PostgreSqlInAString.Lexer {
                 case PostgreSqlLexer.TO_CHAR:
                 case PostgreSqlLexer.TO_DATE:
                 case PostgreSqlLexer.TO_NUMBER:
-                    return SqlTokenCategory.SystemFunction;
+                    return SqlTokenCategory.SystemFunction; //  Could recognize more functions. See https://pgpedia.info/categories/system-function.html
                 case PostgreSqlLexer.Parameter:
                     return SqlTokenCategory.Parameter;
                 case PostgreSqlLexer.Identifier:

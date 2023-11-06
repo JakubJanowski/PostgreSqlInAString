@@ -37,6 +37,7 @@ namespace PostgreSqlInAString {
 
             return StringType.Unknown;
         }
+
         internal static string Unescape(string literalText, StringType stringType, out List<(int Index, int Length, int SkipAmount)> escapes) {
             escapes = new List<(int Index, int Length, int SkipAmount)>();
             StringBuilder stringBuilder = new StringBuilder();
