@@ -12,7 +12,7 @@ Works with Visual Studio 2019 and Visual Studio 2022. Applies only to C# `.cs` f
 
 Supports regular quoted strings `""`, verbatim strings `@""`, interpolated strings `$""` and interpolated verbatim strings `$@""`. Does not support C#11 raw string literals yet (I plan on tackling this after .NET 8 comes out).
 
-Supports parametrized queries. Parameters prefixed with an `@` are colorized differently.
+Supports parametrized queries. Parameters prefixed with an `@` are colorized in golden.
 
 Correctly handles string escape sequences.
 
@@ -26,22 +26,22 @@ PostgreSQL in a String uses an ANTLR 4 lexer to tokenize PostgreSQL syntax.
 The extension does not automatically detect string literals with PostgreSQL syntax. The syntax highlighting must be explicitly enabled for a single string literal, a code region or whole project.
 
 > [!NOTE]
-> Rules inside XML documentation comments (starting with `///` or `/**`) are ignored.
+> Rule configuration inside XML documentation comments (starting with `///` or `/**`) are ignored.
 
-## Inline rules
+## Inline rule configuration
 
 Highlighting can be enabled inline by prefixing a string literal with a comment containing `strpsql` text or `PostgreSqlInAString` (if you prefer to be more explicit). Note that only block comments can be used as the comment must be directly adjacent to the beginning of string literal.
 ```C#
 string sql = /*strpsql*/@"SELECT COUNT(*) FROM order;";
 ```
-When the string is inside enabled region, highlighting can be disabled inline by prefixing the string literal with a comment containing `strpsql-ignore` text or `PostgreSqlInAString-ignore` for a longer version.
+When the string literal is inside an enabled region, its highlighting can be disabled inline by prefixing it with a comment containing `strpsql-ignore` text or `PostgreSqlInAString-ignore` for a longer version.
 ```C#
 string text = /*strpsql-ignore*/"Just a regular string, no SQL here";
 ```
 
-## Region rules
+## Region rule configuration
 
-Enable or disable highlighting in code regions with comment rules. A region rule will override highlighting of every string literal after it until the next rule or end of file.
+Enable or disable highlighting in code regions with rule configuration comments. A region configuration will override highlighting of every string literal after it, except for those prefixed with inline rule configuration, until the next region configuration or end of file.
 
 Short version:
 - `// strpsql-on `
@@ -51,12 +51,12 @@ Longer version:
 - `/* PostgreSqlInAString-enable */`
 - `/* PostgreSqlInAString-disable */`
 
-The rule parts can be mixed, e.g. `strpsql-enable` will work too.
+The rule parts can be mixed, e.g. `/*strpsql-enable*/` will work too.
 
 ## Project configuration
 
 To have the highlighting enabled by default for an entire project, add the following section in the `.csproj` file (or merge it with existing `ProjectExtensions` element).
-```
+```XML
 <ProjectExtensions>
   <PostgreSqlInAString>
     <Enabled>true</Enabled>
@@ -68,9 +68,9 @@ This may be useful when you have a separate data access project where most of th
 
 ## Explanations
 
-Rules can contain explanations similar to what ESLint comment rules allow.
+Rule configuration comments can contain explanations similar to what ESLint rule configuration comments allow.
 
-To add an explanation to the rule, add two dashes after the rule name (separated by some whitespace) and place your explanation after the dashes.
+To add an explanation to the configuration, add two dashes after the rule name (separated by some whitespace) and place your explanation after the dashes.
 
 ``` C#
 /* strpsql-off -- This is HTML */
@@ -84,7 +84,7 @@ string str = "<select>" +
 ```C#
 string sql = /* PostgreSqlInAString -- hey, 
               *    this is an explanation
-              *    that spans multiple lines
+              *    that spans multiple lines.
               */@"TRUNCATE address, order_product, order, product RESTART IDENTITY;";
 ```
 
@@ -99,9 +99,9 @@ The default colors except for parameter color are a mix of 50% default string co
 
 
 # Possible further improvements
-- support raw string literals
-- handle PL/pgSQL in a string in a string
-- autocompletion
-- light-mode-friendly color palette and auto-switching between palettes when mode is changed
-- basic error recognition (typos, unsupported keyword order, etc.) by using an ANTLR parser
-- extend to support more language syntaxes in string literals: T-SQL, HTML, etc.
+- Support for raw string literals
+- Highlighting of PL/pgSQL in a string in a string
+- Autocompletion
+- Light-mode-friendly color palette and auto-switching between palettes when mode is changed
+- Basic error recognition (typos, unsupported keyword order, etc.) by using an ANTLR parser
+- Support for more language syntaxes in string literals: T-SQL, HTML, etc.
