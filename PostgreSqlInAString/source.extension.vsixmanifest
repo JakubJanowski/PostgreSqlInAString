@@ -4,6 +4,7 @@
         <Identity Id="PostgreSqlInAString.74f2ae3d-1cff-4a8b-910e-3955198de8eb" Version="1.0" Language="en-US" Publisher="Jakub Janowski" />
         <DisplayName>PostgreSqlInAString</DisplayName>
         <Description xml:space="preserve">Syntax highlighting for PostgreSQL in C# string literals.</Description>
+        <MoreInfo>https://github.com/JakubJanowski/PostgreSqlInAString</MoreInfo>
         <License>LICENSE.txt</License>
         <Icon>icon.png</Icon>
         <PreviewImage>icon.png</PreviewImage>
