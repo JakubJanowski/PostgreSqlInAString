@@ -2,9 +2,13 @@
   <img src="https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/7f494f51-7f97-4812-8d9c-9156a0a4d2c9" />
 </p>
 
-# PostgreSQL in a String
+# PostgreSQL in a String for Visual Studio 2019
 
-This is a Visual Studio extension that adds highlighting for PostgreSQL syntax in C# string literals.
+This is a separate PostgreSQL in a String extension that targets only Visual Studio 2019. Extension for Visual Studio 2022 can be found on the [main branch](https://github.com/JakubJanowski/PostgreSqlInAString).
+
+---
+
+PostgreSQL in a String is a Visual Studio extension that adds highlighting for PostgreSQL syntax in C# string literals.
 
 ![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/b09afa46-1529-4f22-b8c4-9ddfec9d6181)
 
