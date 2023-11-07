@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="PostgreSqlInAString.74f2ae3d-1cff-4a8b-910e-3955198de8eb" Version="1.0" Language="en-US" Publisher="Jakub Janowski" />
-    <DisplayName>PostgreSqlInAString</DisplayName>
-    <Description xml:space="preserve">Syntax highlighting for PostgreSQL in C# string literals.</Description>
+    <Identity Id="JakubJanowski.PostgreSqlInAString.VS2019" Version="1.0" Language="en-US" Publisher="Jakub Janowski" />
+    <DisplayName>PostgreSQL in a String for VS2019</DisplayName>
+    <Description xml:space="preserve">Syntax highlighting for PostgreSQL in C# string literals for Visual Studio 2019.</Description>
     <MoreInfo>https://github.com/JakubJanowski/PostgreSqlInAString</MoreInfo>
     <License>LICENSE.txt</License>
     <Icon>icon.png</Icon>
@@ -11,15 +11,15 @@
     <Tags>C#, PostrgreSQL, SQL, String, Syntax highlighting</Tags>
   </Metadata>
   <Installation>
-    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0, 18.0)">
-      <ProductArchitecture>amd64</ProductArchitecture>
+    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[16.0, 17.0)">
+      <ProductArchitecture>x86</ProductArchitecture>
     </InstallationTarget>
   </Installation>
   <Dependencies>
     <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
   </Dependencies>
   <Prerequisites>
-    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.0,18.0)" DisplayName="Visual Studio core editor" />
+    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[16.0,17.0)" DisplayName="Visual Studio core editor" />
   </Prerequisites>
   <Assets>
     <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
