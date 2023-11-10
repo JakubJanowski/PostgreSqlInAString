@@ -8,7 +8,9 @@ This is a Visual Studio extension that adds highlighting for PostgreSQL syntax i
 
 ![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/b09afa46-1529-4f22-b8c4-9ddfec9d6181)
 
-Works with Visual Studio 2019 and Visual Studio 2022. Applies only to C# `.cs` files.
+Works with Visual Studio 2019 and Visual Studio 2022. Project targetting Visual Studio 2019 is located on a [separate branch](https://github.com/JakubJanowski/PostgreSqlInAString/tree/vs2019).
+
+Applies only to C# `.cs` files.
 
 Supports regular quoted strings `""`, verbatim strings `@""`, interpolated strings `$""` and interpolated verbatim strings `$@""`. Does not support C#11 raw string literals yet (I plan on tackling this after .NET 8 comes out).
 
@@ -19,6 +21,25 @@ Correctly handles string escape sequences.
 ![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/71ce4ccd-257f-4bff-aac0-beb717e2a0bb)
 
 PostgreSQL in a String uses an ANTLR 4 lexer to tokenize PostgreSQL syntax.
+
+
+# Installation
+
+## Visual Studio 2022
+
+1. In Visual Studio, navigate to `Extensions > Manage Extensions > Online`.
+1. Search for `PostgreSQL in a String`.
+1. Click Download. The extension is then scheduled for install.
+
+Alternatively, you can download the extension from [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=jakub-janowski.strpsql).
+
+## Visual Studio 2019
+
+1. In Visual Studio, navigate to `Extensions > Manage Extensions > Online`.
+1. Search for `PostgreSQL in a String for VS2019`.
+1. Click Download. The extension is then scheduled for install.
+
+Alternatively, you can download the extension from [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=jakub-janowski.strpsql-vs2019).
 
 
 # How to enable and disable highlighting
