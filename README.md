@@ -25,6 +25,25 @@ Correctly handles string escape sequences.
 PostgreSQL in a String uses an ANTLR 4 lexer to tokenize PostgreSQL syntax.
 
 
+# Installation
+
+## Visual Studio 2022
+
+1. In Visual Studio, navigate to `Extensions > Manage Extensions > Online`.
+1. Search for `PostgreSQL in a String`.
+1. Click Download. The extension is then scheduled for install.
+
+Alternatively, you can download the extension from [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=jakub-janowski.strpsql).
+
+## Visual Studio 2019
+
+1. In Visual Studio, navigate to `Extensions > Manage Extensions > Online`.
+1. Search for `PostgreSQL in a String for VS2019`.
+1. Click Download. The extension is then scheduled for install.
+
+Alternatively, you can download the extension from [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=jakub-janowski.strpsql-vs2019).
+
+
 # How to enable and disable highlighting
 
 The extension does not automatically detect string literals with PostgreSQL syntax. The syntax highlighting must be explicitly enabled for a single string literal, a code region or whole project.
