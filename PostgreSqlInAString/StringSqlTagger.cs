@@ -99,15 +99,19 @@ namespace PostgreSqlInAString {
 
                     if (stringEscapeSpansWithinTokenSpan.Count > 0) {
                         IClassificationType classificationType = GetStringEscapeClassificationType(tokenCategory);
-                        foreach (SnapshotSpan span in stringEscapeSpansWithinTokenSpan) {
-                            yield return new TagSpan<ClassificationTag>(span, new ClassificationTag(classificationType));
+                        if (!(classificationType is null)) {
+                            foreach (SnapshotSpan span in stringEscapeSpansWithinTokenSpan) {
+                                yield return new TagSpan<ClassificationTag>(span, new ClassificationTag(classificationType));
+                            }
                         }
                     }
 
                     if (stringWithoutEscapesTokenSpans.Any()) {
                         IClassificationType classificationType = GetStringClassificationType(tokenCategory);
-                        foreach (SnapshotSpan span in stringWithoutEscapesTokenSpans) {
-                            yield return new TagSpan<ClassificationTag>(span, new ClassificationTag(classificationType));
+                        if (!(classificationType is null)) {
+                            foreach (SnapshotSpan span in stringWithoutEscapesTokenSpans) {
+                                yield return new TagSpan<ClassificationTag>(span, new ClassificationTag(classificationType));
+                            }
                         }
                     }
                 }
