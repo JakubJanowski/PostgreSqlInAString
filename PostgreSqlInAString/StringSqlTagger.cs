@@ -157,7 +157,7 @@ namespace PostgreSqlInAString {
             foreach (SnapshotSpan stringSpan in normalizedStringSpans) {
                 ITextSnapshot snapshot = stringSpan.Snapshot;
                 int position = stringSpan.Start.Position - 1;
-                if (snapshot[position] == '"') {
+                if (position >= 0 && snapshot[position] == '"') {
                     NormalizedSnapshotSpanCollection span = GetPreviousSpanIfCharAtPositionIsPartOfString(snapshot, position);
                     if (!(span is null)) {
                         completeStringSpans = NormalizedSnapshotSpanCollection.Union(completeStringSpans, span);
@@ -165,7 +165,7 @@ namespace PostgreSqlInAString {
                 }
 
                 position = stringSpan.End.Position;
-                if (snapshot[position] == '"') {
+                if (position < snapshot.Length && snapshot[position] == '"') {
                     NormalizedSnapshotSpanCollection span = GetNextSpanIfCharAtPositionIsPartOfString(snapshot, position);
                     if (!(span is null)) {
                         completeStringSpans = NormalizedSnapshotSpanCollection.Union(completeStringSpans, span);
@@ -181,18 +181,16 @@ namespace PostgreSqlInAString {
             // TODO: handle C# 11 raw string literals
             StringType stringType;
             trimmedSpan = default;
-            SnapshotSpan stringBeginningSpan = span;
             int start = span.Start.Position;
             int end = span.End.Position;
 
-            if (start > 0) {
-                SnapshotSpan? potentialStringBeginningSpan = FindStringBeginningSpan(span);
-                if (potentialStringBeginningSpan == null) {
-                    // Code contains errors, skip this span
-                    return StringType.Unknown;
-                }
-                stringBeginningSpan = potentialStringBeginningSpan.Value;
+            SnapshotSpan? potentialStringBeginningSpan = FindStringBeginningSpan(span);
+            if (potentialStringBeginningSpan == null) {
+                // Code contains errors, skip this span
+                return StringType.Unknown;
             }
+
+            SnapshotSpan stringBeginningSpan = potentialStringBeginningSpan.Value;
 
             bool? isEnabledInline = IsEnabledInline(stringBeginningSpan);
             if (isEnabledInline == false || (isEnabledInline == null && !isInEnabledRegion)) {
@@ -212,17 +210,15 @@ namespace PostgreSqlInAString {
                 start += openingLength;
             }
 
-            SnapshotSpan stringEndingSpan = span;
-            if (end < span.Snapshot.Length - 1) {
-                SnapshotSpan? potentialStringEndingSpan = FindStringEndingSpan(span);
-                if (potentialStringEndingSpan == null) {
-                    // Code contains errors, skip this span
-                    return StringType.Unknown;
-                }
-                stringEndingSpan = potentialStringEndingSpan.Value;
+            SnapshotSpan? potentialStringEndingSpan = FindStringEndingSpan(span);
+            if (potentialStringEndingSpan == null) {
+                // Code contains errors, skip this span
+                return StringType.Unknown;
             }
 
-            if (stringEndingSpan == span && stringEndingSpan.GetText()[span.Length - 1] == '"') {   // The second check is probably unnecessary, string literal wil always end with a '"'
+            SnapshotSpan stringEndingSpan = potentialStringEndingSpan.Value;
+
+            if (stringEndingSpan == span) {   // String literal wil always end with a '"'
                 end -= 1;
             }
 
@@ -237,6 +233,10 @@ namespace PostgreSqlInAString {
         // true if enabled inline, false if disabled inline, null if none
         private bool? IsEnabledInline(SnapshotSpan stringSpan) {
             int position = stringSpan.Start.Position - 1;
+            if (position < 0) {
+                return null;
+            }
+
             SnapshotSpan span = new SnapshotSpan(stringSpan.Snapshot, position, 1);
             IEnumerable<IMappingSpan> commentSpans = GetCommentTagSpans(span).Select(t => t.Span);
             if (!commentSpans.Any()) {
@@ -257,11 +257,12 @@ namespace PostgreSqlInAString {
             if (inlineDisableRuleRegex.IsMatch(ruleText)) {
                 return false;
             }
+
             return null;
         }
 
         private SnapshotSpan? FindStringBeginningSpan(SnapshotSpan span) {
-            while (true) {
+            while (span.Start.Position > 3) {   // Snapshot needs to have place for at least '$"{}'
                 SnapshotSpan? resultSpan = FindPreviousStringSpan(span);
                 if (resultSpan == span) {
                     return resultSpan;
@@ -271,10 +272,12 @@ namespace PostgreSqlInAString {
                 }
                 span = resultSpan.Value;
             }
+
+            return span;
         }
 
         private SnapshotSpan? FindStringEndingSpan(SnapshotSpan span) {
-            while (true) {
+            while (span.End.Position < span.Snapshot.Length - 3) {  // Snapshot needs to have place for at least '{}"'
                 SnapshotSpan? resultSpan = FindNextStringSpan(span);
                 if (resultSpan == span) {
                     return resultSpan;
@@ -284,65 +287,71 @@ namespace PostgreSqlInAString {
                 }
                 span = resultSpan.Value;
             }
+
+            return span;
         }
 
         // Returns passed in span if given span is the beginning of a string. otherwise previous span of the same string definition
         // Given code: string x = $"aaa{b}ccc";
         // when passed the 'ccc"' span, the function will return the '$"aaa' span
         // when passed the '$"aaa' span, the function will return the same '$"aaa' span
+        // snapshotSpan.Start.Position must be > 3
         private SnapshotSpan? FindPreviousStringSpan(SnapshotSpan snapshotSpan) {
             // Only interpolated string literals can be spread across multiple spans(don't know about C# 11 raw string literals)
             int position = snapshotSpan.Start.Position - 1;
             ITextSnapshot snapshot = snapshotSpan.Snapshot;
-            if (snapshot[position] == '}') {
-                // while there are more parameters adjacent in the string i.e. @"a{1}{2}[3}b"
-                while (IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
-                    // Find the matching start brace
-                    int nesting = 1;
-                    while (true) {
-                        if (position <= 1) { // could be even <= 2 because interpolated string requires 2 chars at the beginning $"
-                            // Code contains errors, braces don't match or there is no enough space for previous string span
-                            return null;
-                        }
-                        position--;
-                        char character = snapshot[position];
-                        if (character == '{' && IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
-                            nesting--;
-                            if (nesting == 0) {
-                                break;
-                            }
-                        } else if (character == '}' && IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
-                            nesting++;
-                        }
-                    }
 
+            if (snapshot[position] != '}') {
+                return snapshotSpan;
+            }
+
+            // while there are more parameters adjacent in the string i.e. @"a{1}{2}[3}b"
+            while (IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
+                // Find the matching start brace
+                int nesting = 1;
+                while (true) {
+                    if (position <= 2) {    // Snapshot needs to have place for at least '$"{'
+                        // Code contains errors, braces don't match or there is not enough space for previous string span
+                        return null;
+                    }
                     position--;
-                    // Check if the previous character is part of a string span
-                    // Also handles case with escaped end brace, e.g. string x = $"}}{1}";
-                NormalizedSnapshotSpanCollection previousSpan = GetPreviousSpanIfCharAtPositionIsPartOfString(snapshot, position);
-                    if (!(previousSpan is null)) {
-                        // Join together neighboring string literal spans
-                        while (true) {
-                            position = previousSpan[0].Start - 1;
-                            if (position < 0) {
-                                return previousSpan[0];
-                            }
-                        NormalizedSnapshotSpanCollection previousPreviousSpan = GetPreviousSpanIfCharAtPositionIsPartOfString(snapshot, position);
-                            if (previousPreviousSpan is null || previousPreviousSpan.Count == 0) {
-                                return previousSpan[0];
-                            }
-                            previousSpan = NormalizedSnapshotSpanCollection.Union(previousSpan, previousPreviousSpan);
-                        };
+                    char character = snapshot[position];
+                    if (character == '{' && IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
+                        nesting--;
+                        if (nesting == 0) {
+                            break;
+                        }
+                    } else if (character == '}' && IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
+                        nesting++;
                     }
-
-                    if (snapshot[position] != '}') {
-                        // String just follows some code block, e.g. {}"str".ToString();
-                        // It is not possible for different string literals to immediately lead and follow a code block, i.e. "aaa"{}"bbb" is not possible without errors, so previous checks are correct
-                        return snapshotSpan;
-                    }
-
-                    // Continue loop, look for another end brace, e.g. string x = $"{1}{2}";
                 }
+
+                position--;
+                // Check if the previous character is part of a string span
+                // Also handles case with escaped end brace, e.g. string x = $"}}{1}";
+                NormalizedSnapshotSpanCollection previousSpan = GetPreviousSpanIfCharAtPositionIsPartOfString(snapshot, position);
+                if (!(previousSpan is null)) {
+                    // Join together neighboring string literal spans
+                    while (true) {
+                        position = previousSpan[0].Start.Position - 1;
+                        if (position < 0) {
+                            return previousSpan[0];
+                        }
+                        NormalizedSnapshotSpanCollection previousPreviousSpan = GetPreviousSpanIfCharAtPositionIsPartOfString(snapshot, position);
+                        if (previousPreviousSpan is null || previousPreviousSpan.Count == 0) {
+                            return previousSpan[0];
+                        }
+                        previousSpan = NormalizedSnapshotSpanCollection.Union(previousSpan, previousPreviousSpan);
+                    };
+                }
+
+                if (snapshot[position] != '}') {
+                    // String just follows some code block, e.g. {}"str".ToString();
+                    // It is not possible for different string literals to immediately lead and follow a code block, i.e. "aaa"{}"bbb" is not possible without errors, so previous checks are correct
+                    return snapshotSpan;
+                }
+
+                // Continue loop, look for another end brace, e.g. string x = $"{1}{2}";
             }
 
             return snapshotSpan;
@@ -352,6 +361,7 @@ namespace PostgreSqlInAString {
         // Given code: string x = $"aaa{b}ccc";
         // when passed the '$"aaa' span, the function will return the 'ccc"' span
         // when passed the 'ccc"' span, the function will return the same 'ccc"' span
+        // span.End.Position must be < snapshotSpan.Length - 3
         private SnapshotSpan? FindNextStringSpan(SnapshotSpan snapshotSpan) {
             // Only interpolated string literals can be spread across multiple spans(don't know about C# 11 raw string literals)
             int position = snapshotSpan.End.Position;
@@ -362,8 +372,9 @@ namespace PostgreSqlInAString {
                     // Find the matching end brace
                     int nesting = 1;
                     while (true) {
-                        if (position >= snapshot.Length - 2) { // Text needs to have place for at least '}"'
-                            // Code contains errors, braces don't match or there is no enough space for next string span
+                        if (position >= snapshot.Length - 2) {  // Snapshot needs to have place for at least '}"'
+                            // Code contains errors, braces don't match or there is not enough space for next string span
+                            return null;
                         }
                         position++;
                         char character = snapshot[position];
@@ -384,7 +395,7 @@ namespace PostgreSqlInAString {
                     if (!(nextSpan is null)) {
                         // Join together neighboring string literal spans
                         while (true) {
-                            position = nextSpan[0].End;
+                            position = nextSpan[0].End.Position;
                             if (position >= snapshot.Length) {
                                 // Code probably contains errors because code should end with a closing brace or a comma or sth, but the string could still be colored and it shouldn't be this functions' responsibility, so return the last string's span
                                 return nextSpan[0];
