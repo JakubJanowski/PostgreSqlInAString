@@ -42,6 +42,8 @@ namespace PostgreSqlInAString {
             escapes = new List<(int Index, int Length, int SkipAmount)>();
             StringBuilder stringBuilder = new StringBuilder();
             int lastIndex = 0;
+
+            // Collection of spans tagged as escape characters could be used to check and unescape these spans instead of checking individually which characters are escaped, but the surrogate pairs would still have to be scanned for.
             for (int index = 0; index < literalText.Length - 1; index++) {
                 char character = literalText[index];
                 if ((
@@ -70,7 +72,6 @@ namespace PostgreSqlInAString {
                 }
             }
 
-            // TODO: string - escaped character format definitions for each classification type
             if (lastIndex < literalText.Length) {
                 stringBuilder.Append(literalText, lastIndex, literalText.Length - lastIndex);
             }

@@ -10,7 +10,10 @@ using PostgreSqlInAString.Lexer;
 
 namespace PostgreSqlInAString {
     internal sealed class StringSqlTagger: ITagger<ClassificationTag> {
-        private ITagAggregator<IClassificationTag> tagAggregator;
+        private readonly static Regex enableRuleRegex = new Regex(@"^(?:strpsql|PostgreSqlInAString)-(on|off|enable|disable)(?:$|\s+--)", RegexOptions.IgnoreCase);    // Used to match trimmed comment content
+        private readonly static Regex inlineEnableRuleRegex = new Regex(@"^(?:strpsql|PostgreSqlInAString)(?:$|\s+--)", RegexOptions.IgnoreCase);    // Used to match trimmed comment content
+        private readonly static Regex inlineDisableRuleRegex = new Regex(@"^(?:strpsql|PostgreSqlInAString)-ignore(?:$|\s+--)", RegexOptions.IgnoreCase);    // Used to match trimmed comment content
+
         private IClassificationType commentClassificationType;
         private IClassificationType identifierClassificationType;
         private IClassificationType keywordClassificationType;
@@ -26,10 +29,8 @@ namespace PostgreSqlInAString {
         private IClassificationType operatorEscapeClassificationType;
         private IClassificationType stringEscapeClassificationType;
         private IClassificationType systemFunctionEscapeClassificationType;
+        private ITagAggregator<IClassificationTag> tagAggregator;
         private PostgreSqlInAStringConfiguration configuration;
-        private readonly static Regex enableRuleRegex = new Regex(@"^(?:strpsql|PostgreSqlInAString)-(on|off|enable|disable)(?:$|\s+--)", RegexOptions.IgnoreCase);    // Used to match trimmed comment content
-        private readonly static Regex inlineEnableRuleRegex = new Regex(@"^(?:strpsql|PostgreSqlInAString)(?:$|\s+--)", RegexOptions.IgnoreCase);    // Used to match trimmed comment content
-        private readonly static Regex inlineDisableRuleRegex = new Regex(@"^(?:strpsql|PostgreSqlInAString)-ignore(?:$|\s+--)", RegexOptions.IgnoreCase);    // Used to match trimmed comment content
 
         public event EventHandler<SnapshotSpanEventArgs> TagsChanged;
 
@@ -118,7 +119,7 @@ namespace PostgreSqlInAString {
             }
         }
 
-        // Yields normalized snapshot spans tagged as string or string - verbatim, that are in enabled regions (strpsql-enable) and within the passed span collection
+        // Yields normalized snapshot spans tagged as 'string' or 'string - verbatim' or 'string - escape character', that are in enabled regions (strpsql-enable) and within the passed span collection
         private IEnumerable<(SnapshotSpan, StringType)> GetEnabledStringSpans(NormalizedSnapshotSpanCollection snapshotSpanCollection) {
             IEnumerable<IMappingTagSpan<IClassificationTag>> stringTagSpans = GetStringTagSpans(snapshotSpanCollection);
             if (!stringTagSpans.Any()) {
@@ -157,7 +158,7 @@ namespace PostgreSqlInAString {
                 ITextSnapshot snapshot = stringSpan.Snapshot;
                 int position = stringSpan.Start.Position - 1;
                 if (snapshot[position] == '"') {
-                    NormalizedSnapshotSpanCollection span = GetSpanIfCharAtPositionIsPartOfString(snapshot, position);
+                    NormalizedSnapshotSpanCollection span = GetPreviousSpanIfCharAtPositionIsPartOfString(snapshot, position);
                     if (!(span is null)) {
                         completeStringSpans = NormalizedSnapshotSpanCollection.Union(completeStringSpans, span);
                     }
@@ -165,7 +166,7 @@ namespace PostgreSqlInAString {
 
                 position = stringSpan.End.Position;
                 if (snapshot[position] == '"') {
-                    NormalizedSnapshotSpanCollection span = GetSpanIfCharAtPositionIsPartOfString(snapshot, position);
+                    NormalizedSnapshotSpanCollection span = GetNextSpanIfCharAtPositionIsPartOfString(snapshot, position);
                     if (!(span is null)) {
                         completeStringSpans = NormalizedSnapshotSpanCollection.Union(completeStringSpans, span);
                     }
@@ -295,7 +296,7 @@ namespace PostgreSqlInAString {
             ITextSnapshot snapshot = snapshotSpan.Snapshot;
             if (snapshot[position] == '}') {
                 // while there are more parameters adjacent in the string i.e. @"a{1}{2}[3}b"
-                while (IsCharAtPositionPartOfSpanType(snapshot, position, "punctuation")) {
+                while (IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
                     // Find the matching start brace
                     int nesting = 1;
                     while (true) {
@@ -305,12 +306,12 @@ namespace PostgreSqlInAString {
                         }
                         position--;
                         char character = snapshot[position];
-                        if (character == '{' && IsCharAtPositionPartOfSpanType(snapshot, position, "punctuation")) {
+                        if (character == '{' && IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
                             nesting--;
                             if (nesting == 0) {
                                 break;
                             }
-                        } else if (character == '}' && IsCharAtPositionPartOfSpanType(snapshot, position, "punctuation")) {
+                        } else if (character == '}' && IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
                             nesting++;
                         }
                     }
@@ -318,7 +319,7 @@ namespace PostgreSqlInAString {
                     position--;
                     // Check if the previous character is part of a string span
                     // Also handles case with escaped end brace, e.g. string x = $"}}{1}";
-                    NormalizedSnapshotSpanCollection previousSpan = GetSpanIfCharAtPositionIsPartOfString(snapshot, position);
+                NormalizedSnapshotSpanCollection previousSpan = GetPreviousSpanIfCharAtPositionIsPartOfString(snapshot, position);
                     if (!(previousSpan is null)) {
                         // Join together neighboring string literal spans
                         while (true) {
@@ -326,7 +327,7 @@ namespace PostgreSqlInAString {
                             if (position < 0) {
                                 return previousSpan[0];
                             }
-                            NormalizedSnapshotSpanCollection previousPreviousSpan = GetSpanIfCharAtPositionIsPartOfString(snapshot, position);
+                        NormalizedSnapshotSpanCollection previousPreviousSpan = GetPreviousSpanIfCharAtPositionIsPartOfString(snapshot, position);
                             if (previousPreviousSpan is null || previousPreviousSpan.Count == 0) {
                                 return previousSpan[0];
                             }
@@ -357,7 +358,7 @@ namespace PostgreSqlInAString {
             ITextSnapshot snapshot = snapshotSpan.Snapshot;
             if (snapshot[position] == '{') {
                 // while there are more parameters adjacent in the string i.e. @"a{1}{2}[3}b"
-                while (IsCharAtPositionPartOfSpanType(snapshot, position, "punctuation")) {
+                while (IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
                     // Find the matching end brace
                     int nesting = 1;
                     while (true) {
@@ -366,12 +367,12 @@ namespace PostgreSqlInAString {
                         }
                         position++;
                         char character = snapshot[position];
-                        if (character == '}' && IsCharAtPositionPartOfSpanType(snapshot, position, "punctuation")) {
+                        if (character == '}' && IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
                             nesting--;
                             if (nesting == 0) {
                                 break;
                             }
-                        } else if (character == '{' && IsCharAtPositionPartOfSpanType(snapshot, position, "punctuation")) {
+                        } else if (character == '{' && IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
                             nesting++;
                         }
                     }
@@ -379,7 +380,7 @@ namespace PostgreSqlInAString {
                     position++;
                     // Check if the next character is part of a string span
                     // Also handles case with escaped start brace, e.g. string x = $"{1}{{";
-                    NormalizedSnapshotSpanCollection nextSpan = GetSpanIfCharAtPositionIsPartOfString(snapshot, position);
+                    NormalizedSnapshotSpanCollection nextSpan = GetNextSpanIfCharAtPositionIsPartOfString(snapshot, position);
                     if (!(nextSpan is null)) {
                         // Join together neighboring string literal spans
                         while (true) {
@@ -388,7 +389,7 @@ namespace PostgreSqlInAString {
                                 // Code probably contains errors because code should end with a closing brace or a comma or sth, but the string could still be colored and it shouldn't be this functions' responsibility, so return the last string's span
                                 return nextSpan[0];
                             }
-                            NormalizedSnapshotSpanCollection nextNextSpan = GetSpanIfCharAtPositionIsPartOfString(snapshot, position);
+                            NormalizedSnapshotSpanCollection nextNextSpan = GetNextSpanIfCharAtPositionIsPartOfString(snapshot, position);
                             if (nextNextSpan is null || nextNextSpan.Count == 0) {
                                 return nextSpan[0];
                             }
@@ -507,23 +508,42 @@ namespace PostgreSqlInAString {
         }
 
         private IEnumerable<IMappingTagSpan<IClassificationTag>> GetCommentTagSpans(SnapshotSpan span) {
-            return tagAggregator.GetTags(span).Where(t => t.Tag.ClassificationType.IsOfType("comment"));    // This includes single-line comments and block comments. XML doc comments are not included intentionally.
+            return tagAggregator.GetTags(span).Where(t => t.Tag.ClassificationType.IsOfType(ClassificationTypeName.Comment));    // This includes single-line comments and block comments. XML doc comments are not included intentionally.
         }
 
         private IEnumerable<IMappingTagSpan<IClassificationTag>> GetStringTagSpans(NormalizedSnapshotSpanCollection span) {
-            return tagAggregator.GetTags(span).Where(t => t.Tag.ClassificationType.IsOfType("string") || t.Tag.ClassificationType.IsOfType("string - verbatim"));
+            return tagAggregator.GetTags(span).Where(t => t.Tag.ClassificationType.IsOfType(ClassificationTypeName.String) || t.Tag.ClassificationType.IsOfType(ClassificationTypeName.StringEscapeCharacter) || t.Tag.ClassificationType.IsOfType(ClassificationTypeName.StringVerbatim));
         }
 
         private IEnumerable<IMappingTagSpan<IClassificationTag>> GetStringTagSpans(SnapshotSpan span) {
-            return tagAggregator.GetTags(span).Where(t => t.Tag.ClassificationType.IsOfType("string") || t.Tag.ClassificationType.IsOfType("string - verbatim"));
+            return tagAggregator.GetTags(span).Where(t => t.Tag.ClassificationType.IsOfType(ClassificationTypeName.String) || t.Tag.ClassificationType.IsOfType(ClassificationTypeName.StringEscapeCharacter) || t.Tag.ClassificationType.IsOfType(ClassificationTypeName.StringVerbatim));
         }
 
-        private NormalizedSnapshotSpanCollection GetSpanIfCharAtPositionIsPartOfString(ITextSnapshot snapshot, int position) {
+        private NormalizedSnapshotSpanCollection GetNextSpanIfCharAtPositionIsPartOfString(ITextSnapshot snapshot, int position) {
             SnapshotSpan span = new SnapshotSpan(snapshot, position, 1);
-            IMappingSpan mappingSpan = GetStringTagSpans(span).Select(t => t.Span).FirstOrDefault();
+            IMappingSpan mappingSpan = GetStringTagSpans(span)
+                .Select(t => t.Span)
+                .Where(s => s.End.GetPoint(snapshot, PositionAffinity.Successor)?.Position > position)
+                .MinBy(s => s.Start.GetPoint(snapshot, PositionAffinity.Predecessor)?.Position);
+
             if (mappingSpan is null) {
                 return null;
             }
+
+            return mappingSpan.GetSpans(mappingSpan.AnchorBuffer);
+        }
+
+        private NormalizedSnapshotSpanCollection GetPreviousSpanIfCharAtPositionIsPartOfString(ITextSnapshot snapshot, int position) {
+            SnapshotSpan span = new SnapshotSpan(snapshot, position, 1);
+            IMappingSpan mappingSpan = GetStringTagSpans(span)
+                .Select(t => t.Span)
+                .Where(s => s.Start.GetPoint(snapshot, PositionAffinity.Predecessor)?.Position <= position)
+                .MaxBy(s => s.End.GetPoint(snapshot, PositionAffinity.Successor)?.Position);
+
+            if (mappingSpan is null) {
+                return null;
+            }
+
             return mappingSpan.GetSpans(mappingSpan.AnchorBuffer);
         }
 

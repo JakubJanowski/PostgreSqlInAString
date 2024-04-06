@@ -63,9 +63,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ClassificationTypeName.cs" />
     <Compile Include="Lexer\PostgreSqlLexer.cs" />
     <Compile Include="Lexer\PostgreSqlLexerBase.cs" />
     <Compile Include="Lexer\TokenCategorizer.cs" />
+    <Compile Include="LinqExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SqlTokenCategory.cs" />
     <Compile Include="StringType.cs" />
