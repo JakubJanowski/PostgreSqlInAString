@@ -177,20 +177,14 @@ namespace PostgreSqlInAString {
         }
 
         private StringType CategorizeAndTrimStringSpans(SnapshotSpan span, bool isInEnabledRegion, out SnapshotSpan trimmedSpan) {
-            // Cut out $@" at the beginning and " at the end of the string. Some instances may not have quotation marks at start nor end if the string is interpolated and there are parameters.
+            // Cut out $@" at the beginning and " at the end of the string. Some instances may not have quotation marks at start nor end if the string is interpolated and there are interpolation expressions.
             // TODO: handle C# 11 raw string literals
             StringType stringType;
             trimmedSpan = default;
             int start = span.Start.Position;
             int end = span.End.Position;
 
-            SnapshotSpan? potentialStringBeginningSpan = FindStringBeginningSpan(span);
-            if (potentialStringBeginningSpan == null) {
-                // Code contains errors, skip this span
-                return StringType.Unknown;
-            }
-
-            SnapshotSpan stringBeginningSpan = potentialStringBeginningSpan.Value;
+            SnapshotSpan stringBeginningSpan = FindStringBeginningSpan(span);
 
             bool? isEnabledInline = IsEnabledInline(stringBeginningSpan);
             if (isEnabledInline == false || (isEnabledInline == null && !isInEnabledRegion)) {
@@ -210,15 +204,8 @@ namespace PostgreSqlInAString {
                 start += openingLength;
             }
 
-            SnapshotSpan? potentialStringEndingSpan = FindStringEndingSpan(span);
-            if (potentialStringEndingSpan == null) {
-                // Code contains errors, skip this span
-                return StringType.Unknown;
-            }
-
-            SnapshotSpan stringEndingSpan = potentialStringEndingSpan.Value;
-
-            if (stringEndingSpan == span) {   // String literal wil always end with a '"'
+            SnapshotSpan stringEndingSpan = FindStringEndingSpan(span);
+            if (stringEndingSpan == span && span.GetText()[span.Length - 1] == '"') {   // String literal should always end with a '"', but code may contain syntax errors
                 end -= 1;
             }
 
@@ -261,42 +248,36 @@ namespace PostgreSqlInAString {
             return null;
         }
 
-        private SnapshotSpan? FindStringBeginningSpan(SnapshotSpan span) {
+        private SnapshotSpan FindStringBeginningSpan(SnapshotSpan span) {
             while (span.Start.Position > 3) {   // Snapshot needs to have place for at least '$"{}'
-                SnapshotSpan? resultSpan = FindPreviousStringSpan(span);
+                SnapshotSpan resultSpan = FindPreviousStringSpan(span);
                 if (resultSpan == span) {
                     return resultSpan;
                 }
-                if (resultSpan == null) {
-                    return null;
-                }
-                span = resultSpan.Value;
+                span = resultSpan;
             }
 
             return span;
         }
 
-        private SnapshotSpan? FindStringEndingSpan(SnapshotSpan span) {
+        private SnapshotSpan FindStringEndingSpan(SnapshotSpan span) {
             while (span.End.Position < span.Snapshot.Length - 3) {  // Snapshot needs to have place for at least '{}"'
-                SnapshotSpan? resultSpan = FindNextStringSpan(span);
+                SnapshotSpan resultSpan = FindNextStringSpan(span);
                 if (resultSpan == span) {
                     return resultSpan;
                 }
-                if (resultSpan == null) {
-                    return null;
-                }
-                span = resultSpan.Value;
+                span = resultSpan;
             }
 
             return span;
         }
 
-        // Returns passed in span if given span is the beginning of a string. otherwise previous span of the same string definition
+        // Returns passed in span if given span is the beginning of a string, otherwise previous span of the same string definition
         // Given code: string x = $"aaa{b}ccc";
         // when passed the 'ccc"' span, the function will return the '$"aaa' span
         // when passed the '$"aaa' span, the function will return the same '$"aaa' span
         // snapshotSpan.Start.Position must be > 3
-        private SnapshotSpan? FindPreviousStringSpan(SnapshotSpan snapshotSpan) {
+        private SnapshotSpan FindPreviousStringSpan(SnapshotSpan snapshotSpan) {
             // Only interpolated string literals can be spread across multiple spans(don't know about C# 11 raw string literals)
             int position = snapshotSpan.Start.Position - 1;
             ITextSnapshot snapshot = snapshotSpan.Snapshot;
@@ -305,14 +286,15 @@ namespace PostgreSqlInAString {
                 return snapshotSpan;
             }
 
-            // while there are more parameters adjacent in the string i.e. @"a{1}{2}[3}b"
+            // While there are more interpolation expressions adjacent in the string i.e. @"a{1}{2}[3}b"
             while (IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
                 // Find the matching start brace
                 int nesting = 1;
                 while (true) {
                     if (position <= 2) {    // Snapshot needs to have place for at least '$"{'
-                        // Code contains errors, braces don't match or there is not enough space for previous string span
-                        return null;
+                        // There is not enough space for previous string span, so the brace must be closing a code block and current snapshotSpan is the first span of the string literal
+                        // or the code contains errors, e.g. braces don't match. 
+                        return snapshotSpan;
                     }
                     position--;
                     char character = snapshot[position];
@@ -357,65 +339,69 @@ namespace PostgreSqlInAString {
             return snapshotSpan;
         }
 
-        // Returns passed in span if given span is the ending of a string. otherwise next span of the same string definition
+        // Returns passed in span if given span is the ending of a string, otherwise next span of the same string definition
         // Given code: string x = $"aaa{b}ccc";
         // when passed the '$"aaa' span, the function will return the 'ccc"' span
         // when passed the 'ccc"' span, the function will return the same 'ccc"' span
         // span.End.Position must be < snapshotSpan.Length - 3
-        private SnapshotSpan? FindNextStringSpan(SnapshotSpan snapshotSpan) {
+        private SnapshotSpan FindNextStringSpan(SnapshotSpan snapshotSpan) {
             // Only interpolated string literals can be spread across multiple spans(don't know about C# 11 raw string literals)
             int position = snapshotSpan.End.Position;
             ITextSnapshot snapshot = snapshotSpan.Snapshot;
-            if (snapshot[position] == '{') {
-                // while there are more parameters adjacent in the string i.e. @"a{1}{2}[3}b"
-                while (IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
-                    // Find the matching end brace
-                    int nesting = 1;
-                    while (true) {
-                        if (position >= snapshot.Length - 2) {  // Snapshot needs to have place for at least '}"'
-                            // Code contains errors, braces don't match or there is not enough space for next string span
-                            return null;
-                        }
-                        position++;
-                        char character = snapshot[position];
-                        if (character == '}' && IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
-                            nesting--;
-                            if (nesting == 0) {
-                                break;
-                            }
-                        } else if (character == '{' && IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
-                            nesting++;
-                        }
-                    }
 
+            if (snapshot[position] != '{') {
+                return snapshotSpan;
+            }
+
+            // While there are more interpolation expressions adjacent in the string i.e. @"a{1}{2}[3}b"
+            while (IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
+                // Find the matching end brace
+                int nesting = 1;
+                while (true) {
+                    if (position >= snapshot.Length - 2) {  // Snapshot needs to have place for at least '}"'
+                        // There is not enough space for next string span, so the code contains errors, e.g. braces don't match.
+                        // Treat current snapshotSpan as the last span of the string literal
+                        return snapshotSpan;
+                    }
                     position++;
-                    // Check if the next character is part of a string span
-                    // Also handles case with escaped start brace, e.g. string x = $"{1}{{";
-                    NormalizedSnapshotSpanCollection nextSpan = GetNextSpanIfCharAtPositionIsPartOfString(snapshot, position);
-                    if (!(nextSpan is null)) {
-                        // Join together neighboring string literal spans
-                        while (true) {
-                            position = nextSpan[0].End.Position;
-                            if (position >= snapshot.Length) {
-                                // Code probably contains errors because code should end with a closing brace or a comma or sth, but the string could still be colored and it shouldn't be this functions' responsibility, so return the last string's span
-                                return nextSpan[0];
-                            }
-                            NormalizedSnapshotSpanCollection nextNextSpan = GetNextSpanIfCharAtPositionIsPartOfString(snapshot, position);
-                            if (nextNextSpan is null || nextNextSpan.Count == 0) {
-                                return nextSpan[0];
-                            }
-                            nextSpan = NormalizedSnapshotSpanCollection.Union(nextSpan, nextNextSpan);
-                        };
+                    char character = snapshot[position];
+                    if (character == '}' && IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
+                        nesting--;
+                        if (nesting == 0) {
+                            break;
+                        }
+                    } else if (character == '{' && IsCharAtPositionPartOfSpanType(snapshot, position, ClassificationTypeName.Punctuation)) {
+                        nesting++;
                     }
-
-
-                    if (snapshot[position] != '{') {
-                        // String literal leads before some code block, e.g. "str"{} - this is a syntax error
-                        return null;
-                    }
-
-                    // Continue loop, look for another start brace, e.g. string x = $"{1}{2}";
                 }
+
+                position++;
+                // Check if the next character is part of a string span
+                // Also handles case with escaped start brace, e.g. string x = $"{1}{{";
+                NormalizedSnapshotSpanCollection nextSpan = GetNextSpanIfCharAtPositionIsPartOfString(snapshot, position);
+                if (!(nextSpan is null)) {
+                    // Join together neighboring string literal spans
+                    while (true) {
+                        position = nextSpan[0].End.Position;
+                        if (position >= snapshot.Length) {
+                            // Code probably contains errors because code should end with a closing brace or a semicolon or sth, but the string could still be colored and it shouldn't be this functions' responsibility, so return the last string's span
+                            return nextSpan[0];
+                        }
+                        NormalizedSnapshotSpanCollection nextNextSpan = GetNextSpanIfCharAtPositionIsPartOfString(snapshot, position);
+                        if (nextNextSpan is null || nextNextSpan.Count == 0) {
+                            return nextSpan[0];
+                        }
+                        nextSpan = NormalizedSnapshotSpanCollection.Union(nextSpan, nextNextSpan);
+                    };
+                }
+
+
+                if (snapshot[position] != '{') {
+                    // String literal leads before some code block, e.g. "str"{} - this is a syntax error. Treat current snapshotSpan as the last span of the string literal
+                    return snapshotSpan;
+                }
+
+                // Continue loop, look for another start brace, e.g. string x = $"{1}{2}";
             }
 
             return snapshotSpan;
