@@ -12,9 +12,15 @@ Works with Visual Studio 2019 and Visual Studio 2022. Project targetting Visual 
 
 Applies only to C# `.cs` files.
 
-Supports regular quoted strings `""`, verbatim strings `@""`, interpolated strings `$""` and interpolated verbatim strings `$@""`. Does not support C#11 raw string literals yet (I plan on tackling this after .NET 8 comes out).
-
 Supports parametrized queries. Parameters prefixed with an `@` are colorized in golden.
+
+Supports all string literal types!
+- regular quoted `" "`,
+- verbatim `@" "`,
+- interpolated `$" "`,
+- interpolated verbatim `$@" "`,
+- raw `""" """`
+- interpolated raw `$""" """`.
 
 Correctly handles string escape sequences.
 
@@ -122,7 +128,6 @@ The default colors except for parameter color are a mix of 50% default string co
 
 
 # Possible further improvements
-- Support for raw string literals
 - Highlighting of PL/pgSQL in a string in a string
 - Autocompletion
 - Light-mode-friendly color palette and auto-switching between palettes when mode is changed

@@ -6,6 +6,7 @@ namespace PostgreSqlInAString {
         Unknown = 0,
         Quoted = 1,
         Verbatim = 3,
-        Interpolated = 5
+        Interpolated = 5,
+        Raw = 9
     }
 }

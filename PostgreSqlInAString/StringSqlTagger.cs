@@ -151,13 +151,16 @@ namespace PostgreSqlInAString {
             }
         }
 
-        // Often string literals like @$"stuff" get tagged as 3 separate 'string - verbatim' tag-spans i.e. @$", stuff, "
+        // Often string literals like @$"stuff" get tagged as 3 separate 'string - verbatim' tag-spans i.e. @$", stuff, ".
+        // Multiline raw string literals also have opening and closing characters tagged in separate spans from the string literal's content.
         private NormalizedSnapshotSpanCollection EnsureStringSpansAreComplete(NormalizedSnapshotSpanCollection normalizedStringSpans) {
             NormalizedSnapshotSpanCollection completeStringSpans = new NormalizedSnapshotSpanCollection(normalizedStringSpans);
             foreach (SnapshotSpan stringSpan in normalizedStringSpans) {
                 ITextSnapshot snapshot = stringSpan.Snapshot;
                 int position = stringSpan.Start.Position - 1;
-                if (position >= 0 && snapshot[position] == '"') {
+                if (position >= 0) {    // Character at the position should be a double quotation mark in case of non-raw string literals, could also be a whitespace in case of raw string literals
+                    // Not sure if string spans are guaranteed to be chopped right after/before string literal opening/closing characters.
+                    // If the extension ever breaks due to this assumption being false, then the previous and next string spans should be retrieved in a loop until the whole continuous string span is put together.
                     NormalizedSnapshotSpanCollection span = GetPreviousSpanIfCharAtPositionIsPartOfString(snapshot, position);
                     if (!(span is null)) {
                         completeStringSpans = NormalizedSnapshotSpanCollection.Union(completeStringSpans, span);
@@ -165,7 +168,7 @@ namespace PostgreSqlInAString {
                 }
 
                 position = stringSpan.End.Position;
-                if (position < snapshot.Length && snapshot[position] == '"') {
+                if (position < snapshot.Length) {   // Character at the position should be a double quotation mark in case of non-raw string literals, could also be a whitespace in case of raw string literals
                     NormalizedSnapshotSpanCollection span = GetNextSpanIfCharAtPositionIsPartOfString(snapshot, position);
                     if (!(span is null)) {
                         completeStringSpans = NormalizedSnapshotSpanCollection.Union(completeStringSpans, span);
@@ -178,13 +181,12 @@ namespace PostgreSqlInAString {
 
         private StringType CategorizeAndTrimStringSpans(SnapshotSpan span, bool isInEnabledRegion, out SnapshotSpan trimmedSpan) {
             // Cut out $@" at the beginning and " at the end of the string. Some instances may not have quotation marks at start nor end if the string is interpolated and there are interpolation expressions.
-            // TODO: handle C# 11 raw string literals
             StringType stringType;
             trimmedSpan = default;
             int start = span.Start.Position;
             int end = span.End.Position;
 
-            SnapshotSpan stringBeginningSpan = FindStringBeginningSpan(span);
+            SnapshotSpan stringBeginningSpan = FindStringBeginningSpan(span);   // TODO: For raw string literals, remove whitespace following the opening quotation marks on the same line
 
             bool? isEnabledInline = IsEnabledInline(stringBeginningSpan);
             if (isEnabledInline == false || (isEnabledInline == null && !isInEnabledRegion)) {
@@ -193,7 +195,7 @@ namespace PostgreSqlInAString {
             }
 
             string spanText = stringBeginningSpan.GetText();
-            stringType = StringUtils.CategorizeString(spanText, out int openingLength);
+            stringType = StringUtils.CategorizeString(spanText, out int openingLength, out int endingLength);
 
             if (stringType == StringType.Unknown) {
                 // Code contains errors, skip this span
@@ -204,9 +206,9 @@ namespace PostgreSqlInAString {
                 start += openingLength;
             }
 
-            SnapshotSpan stringEndingSpan = FindStringEndingSpan(span);
-            if (stringEndingSpan == span && span.GetText()[span.Length - 1] == '"') {   // String literal should always end with a '"', but code may contain syntax errors
-                end -= 1;
+            SnapshotSpan stringEndingSpan = FindStringEndingSpan(span); // TODO: For raw string literals, remove whitespace after each newline equal to closing quotation marks' indent 
+            if (stringEndingSpan == span && span.GetText().Substring(span.Length - endingLength) == new string('"', endingLength)) {   // String literal should always end with double quotation marks, but code may contain syntax errors
+                end -= endingLength;
             }
 
             if (end > start) {
@@ -278,7 +280,7 @@ namespace PostgreSqlInAString {
         // when passed the '$"aaa' span, the function will return the same '$"aaa' span
         // snapshotSpan.Start.Position must be > 3
         private SnapshotSpan FindPreviousStringSpan(SnapshotSpan snapshotSpan) {
-            // Only interpolated string literals can be spread across multiple spans(don't know about C# 11 raw string literals)
+            // Only interpolated string literals can be spread across multiple spans
             int position = snapshotSpan.Start.Position - 1;
             ITextSnapshot snapshot = snapshotSpan.Snapshot;
 
@@ -345,7 +347,7 @@ namespace PostgreSqlInAString {
         // when passed the 'ccc"' span, the function will return the same 'ccc"' span
         // span.End.Position must be < snapshotSpan.Length - 3
         private SnapshotSpan FindNextStringSpan(SnapshotSpan snapshotSpan) {
-            // Only interpolated string literals can be spread across multiple spans(don't know about C# 11 raw string literals)
+            // Only interpolated string literals can be spread across multiple spans
             int position = snapshotSpan.End.Position;
             ITextSnapshot snapshot = snapshotSpan.Snapshot;
 
