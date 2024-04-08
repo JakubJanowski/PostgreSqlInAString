@@ -12,7 +12,7 @@ Works with Visual Studio 2019 and Visual Studio 2022. Project targetting Visual 
 
 Applies only to C# `.cs` files.
 
-Supports parametrized queries. Parameters prefixed with an `@` are colorized in golden.
+Supports parametrized queries. Parameter placeholders prefixed with an `@` (named) or `$` (positional) are colorized in golden.
 
 Supports all string literal types!
 - regular quoted `" "`,
@@ -124,7 +124,7 @@ The default highlight colors were selected for VS dark theme but they can be cus
 
 ![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/7b5ed2e4-240e-4348-afb8-8b3ed53e0631)
 
-The default colors except for parameter color are a mix of 50% default string color and 50% default SQL token color. This means that the highlighted text will have an orange tint, which is by design, to not overwhelm you when combined with other C# syntax as it is still just a string.
+The default colors except for parameter placeholder color are a mix of 50% default string color and 50% default SQL token color. This means that the highlighted text will have an orange tint, which is by design, to not overwhelm when combined with other C# syntax as it is still just a string literal.
 
 
 # Possible further improvements
