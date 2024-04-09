@@ -78,7 +78,7 @@ namespace PostgreSqlInAString {
                         continue;
                     } else if (!stringType.HasFlag(StringType.Verbatim) && character == '\\') {
                         string unescapedCharacter = ScanEscapedCharacter(literalText, index + 1, out int escapeLength);
-                        if (unescapedCharacter == null) {
+                        if (unescapedCharacter is null) {
                             // Error, malformed escape sequence
                             return null;
                         }

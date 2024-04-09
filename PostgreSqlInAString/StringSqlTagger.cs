@@ -63,7 +63,7 @@ namespace PostgreSqlInAString {
             IEnumerable<(SnapshotSpan, StringType)> stringSpans = GetEnabledStringSpans(snapshotSpanCollection);
             foreach ((SnapshotSpan stringSpan, StringType stringType) in stringSpans) {
                 string stringToTokenize = StringUtils.Unescape(stringSpan.GetText(), stringType, out List<(int Index, int Length, int SkipAmount)> escapes);
-                if (stringToTokenize == null) {
+                if (stringToTokenize is null) {
                     continue;   // Found invalid escape sequence
                 }
 
@@ -189,7 +189,7 @@ namespace PostgreSqlInAString {
             SnapshotSpan stringBeginningSpan = FindStringBeginningSpan(span);   // TODO: For raw string literals, remove whitespace following the opening quotation marks on the same line
 
             bool? isEnabledInline = IsEnabledInline(stringBeginningSpan);
-            if (isEnabledInline == false || (isEnabledInline == null && !isInEnabledRegion)) {
+            if ((isEnabledInline is null && !isInEnabledRegion) || isEnabledInline is false) {
                 // String span is not in enabled region
                 return StringType.Unknown;
             }

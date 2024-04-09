@@ -33,11 +33,11 @@ namespace PostgreSqlInAString {
         internal SVsServiceProvider ServiceProvider { get; set; }
 
         public ITagger<T> CreateTagger<T>(ITextView textView, ITextBuffer buffer) where T : ITag {
-            if (textView == null) {
+            if (textView is null) {
                 throw new ArgumentNullException(nameof(textView));
             }
 
-            if (buffer == null) {
+            if (buffer is null) {
                 throw new ArgumentNullException(nameof(buffer));
             }
 
