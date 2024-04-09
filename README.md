@@ -93,7 +93,7 @@ To have the highlighting enabled by default for an entire project, add the follo
 
 This may be useful when you have a separate data access project where most of the strings are database queries.
 
-Adding/changing nodes in `.csproj` might require reopenning all already open files from that project for the configuration to take effect.
+Adding/changing nodes in `.csproj` might require reopening all already open files from that project for the configuration to take effect.
 
 ## Explanations
 
