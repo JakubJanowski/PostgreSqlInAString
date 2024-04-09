@@ -6,7 +6,7 @@
 
 This is a Visual Studio extension that adds highlighting for PostgreSQL syntax in C# string literals.
 
-![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/b09afa46-1529-4f22-b8c4-9ddfec9d6181)
+![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/3f331c52-556c-424f-8900-6a72d699c3bd)
 
 Works with Visual Studio 2019 and Visual Studio 2022. Project targetting Visual Studio 2019 is located on a [separate branch](https://github.com/JakubJanowski/PostgreSqlInAString/tree/vs2019).
 
