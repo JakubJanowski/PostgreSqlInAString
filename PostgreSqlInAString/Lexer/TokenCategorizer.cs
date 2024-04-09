@@ -31,7 +31,6 @@ namespace PostgreSqlInAString.Lexer {
                 case PostgreSqlLexer.NOT_EQUALS:
                 case PostgreSqlLexer.TYPECAST:
                 case PostgreSqlLexer.PERCENT:
-                case PostgreSqlLexer.PARAM:
                 case PostgreSqlLexer.Operator:
                 case PostgreSqlLexer.AND:
                 case PostgreSqlLexer.IN_P:
@@ -642,6 +641,7 @@ namespace PostgreSqlInAString.Lexer {
                 case PostgreSqlLexer.TO_DATE:
                 case PostgreSqlLexer.TO_NUMBER:
                     return SqlTokenCategory.SystemFunction; //  Could recognize more functions. See https://pgpedia.info/categories/system-function.html
+                case PostgreSqlLexer.PARAM:
                 case PostgreSqlLexer.Parameter:
                     return SqlTokenCategory.Parameter;
                 case PostgreSqlLexer.Identifier:

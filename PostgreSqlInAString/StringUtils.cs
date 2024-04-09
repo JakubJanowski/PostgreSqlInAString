@@ -6,14 +6,28 @@ namespace PostgreSqlInAString {
     // Current text editor colors can't be read due to access violation error while reading protected memory. It succeeds in some cases but some tokens spontaneously change to light themed colors (e.g. black operators/punctuation) while in dark mode.
     // System.AccessViolationException: 'Attempted to read or write protected memory. This is often an indication that other memory is corrupt.'
     internal static class StringUtils {
-        internal static StringType CategorizeString(string text, out int openingLength) {
+        internal static StringType CategorizeString(string text, out int openingLength, out int endingLength) {
             StringType stringType = StringType.Unknown;
+            bool expectRawString = false;
             openingLength = 0;
+            endingLength = 0;
             for (int i = 0; i < text.Length; i++) {
                 char character = text[i];
                 switch (character) {
                     case '"':
                         openingLength = i + 1;
+                        if(!stringType.HasFlag(StringType.Verbatim)) {
+                            for (; openingLength < text.Length && text[openingLength] == '"'; openingLength++)
+                                ;
+                            endingLength = openingLength - i;
+                            if (endingLength >= 3) {
+                                return stringType | StringType.Raw;
+                            }
+                        }
+                        if (expectRawString) {
+                            return StringType.Unknown;
+                        }
+                        endingLength = 1;
                         return stringType | StringType.Quoted;
                     case '@':
                         if (stringType.HasFlag(StringType.Verbatim)) {
@@ -23,11 +37,17 @@ namespace PostgreSqlInAString {
                         stringType |= StringType.Verbatim;
                         break;
                     case '$':
-                        if (stringType.HasFlag(StringType.Interpolated)) {
+                        if (!stringType.HasFlag(StringType.Interpolated)) {
+                            stringType |= StringType.Interpolated;
+                            break;
+                        } 
+                        
+                        if (stringType.HasFlag(StringType.Verbatim)) {
                             // Code contains errors
                             return StringType.Unknown;
                         }
-                        stringType |= StringType.Interpolated;
+
+                        expectRawString = true;
                         break;
                     default:
                         // Code contains errors
@@ -42,35 +62,42 @@ namespace PostgreSqlInAString {
             escapes = new List<(int Index, int Length, int SkipAmount)>();
             StringBuilder stringBuilder = new StringBuilder();
             int lastIndex = 0;
-            for (int index = 0; index < literalText.Length - 1; index++) {
-                char character = literalText[index];
-                if ((
-                    (stringType.HasFlag(StringType.Interpolated) && (character == '{' || character == '}')) ||
-                    (stringType.HasFlag(StringType.Verbatim) && character == '"')
-                ) && literalText[index + 1] == character) {
-                    escapes.Add((index, 2, 1));
-                    index++;
-                    stringBuilder.Append(literalText, lastIndex, index - lastIndex);
-                    lastIndex = index + 1;
-                } else if (!stringType.HasFlag(StringType.Verbatim) && character == '\\') {
-                    string unescapedCharacter = ScanEscapedCharacter(literalText, index + 1, out int escapeLength);
-                    if (unescapedCharacter == null) {
-                        // Error, malformed escape sequence
-                        return null;
-                    }
 
-                    stringBuilder.Append(literalText, lastIndex, index - lastIndex);
-                    stringBuilder.Append(unescapedCharacter);
-                    escapes.Add((index, escapeLength + 1, escapeLength));   // unescapedCharacter can have length of 2 in C# strings but the lexer indexes characters as if they had length of 1
-                    index += escapeLength;
-                    lastIndex = index + 1;
-                } else if (char.IsSurrogatePair(literalText, index)) {
+            // Collection of spans tagged as escape characters could be used to check and unescape these spans instead of checking individually which characters are escaped, but the surrogate pairs would still have to be scanned for.
+            for (int index = 0; index < literalText.Length - 1; index++) {
+                if (!stringType.HasFlag(StringType.Raw)) {
+                    char character = literalText[index];
+                    if ((
+                        (stringType.HasFlag(StringType.Interpolated) && (character == '{' || character == '}')) ||
+                        (stringType.HasFlag(StringType.Verbatim) && character == '"')
+                    ) && literalText[index + 1] == character) {
+                        escapes.Add((index, 2, 1));
+                        index++;
+                        stringBuilder.Append(literalText, lastIndex, index - lastIndex);
+                        lastIndex = index + 1;
+                        continue;
+                    } else if (!stringType.HasFlag(StringType.Verbatim) && character == '\\') {
+                        string unescapedCharacter = ScanEscapedCharacter(literalText, index + 1, out int escapeLength);
+                        if (unescapedCharacter is null) {
+                            // Error, malformed escape sequence
+                            return null;
+                        }
+
+                        stringBuilder.Append(literalText, lastIndex, index - lastIndex);
+                        stringBuilder.Append(unescapedCharacter);
+                        escapes.Add((index, escapeLength + 1, escapeLength));   // unescapedCharacter can have length of 2 in C# strings but the lexer indexes characters as if they had length of 1
+                        index += escapeLength;
+                        lastIndex = index + 1;
+                        continue;
+                    }
+                } 
+                
+                if (char.IsSurrogatePair(literalText, index)) {
                     escapes.Add((index, 0, 1)); // This isn't an escape but it should be treated as a single character. Escapes of length 0 should be removed during span normalization
                     index++;
                 }
             }
 
-            // TODO: string - escaped character format definitions for each classification type
             if (lastIndex < literalText.Length) {
                 stringBuilder.Append(literalText, lastIndex, literalText.Length - lastIndex);
             }

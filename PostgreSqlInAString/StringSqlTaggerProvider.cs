@@ -8,21 +8,23 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Utilities;
 
 namespace PostgreSqlInAString {
-    [Export(typeof(ITaggerProvider))]
+    [Export(typeof(IViewTaggerProvider))]
     [ContentType("CSharp")]
+    [Name(nameof(StringSqlTaggerProvider))]
     [TagType(typeof(ClassificationTag))]
-    internal sealed class StringSqlTaggerProvider: ITaggerProvider {
-        private static List<ITextBuffer> IgnoredBuffers = new List<ITextBuffer>();  // For small amount of items at all times, List should be faster than HashSet
+    internal sealed class StringSqlTaggerProvider: IViewTaggerProvider {
+        private static List<ITextView> IgnoredTextViews = new List<ITextView>();  // For small amount of items at all times, List should be faster than HashSet
 
         [Import]
         internal IClassificationTypeRegistryService ClassificationRegistry { get; set; }
 
         [Import]
-        internal IBufferTagAggregatorFactoryService TagAggregatorFactory { get; set; }
+        internal IViewTagAggregatorFactoryService TagAggregatorFactory { get; set; }
 
         [Import]
         internal ITextDocumentFactoryService TextDocumentFactoryService { get; set; }
@@ -30,13 +32,22 @@ namespace PostgreSqlInAString {
         [Import]
         internal SVsServiceProvider ServiceProvider { get; set; }
 
-        public ITagger<T> CreateTagger<T>(ITextBuffer buffer) where T : ITag {
-            if (buffer == null) {
+        public ITagger<T> CreateTagger<T>(ITextView textView, ITextBuffer buffer) where T : ITag {
+            if (textView is null) {
+                throw new ArgumentNullException(nameof(textView));
+            }
+
+            if (buffer is null) {
                 throw new ArgumentNullException(nameof(buffer));
             }
 
+            // Only provide highlighting on the surface buffer
+            if (textView.TextBuffer != buffer) {
+                return null;
+            }
+
             // Skip creating the tagger, if the method was invoked by calling CreateTagAggregator below, to prevent stack overflow.
-            if (IgnoredBuffers.Contains(buffer)) {
+            if (IgnoredTextViews.Contains(textView)) {
                 return null;
             }
 
@@ -55,10 +66,10 @@ namespace PostgreSqlInAString {
 
             ITagAggregator<IClassificationTag> tagAggregator;
             try {
-                IgnoredBuffers.Add(buffer);
-                tagAggregator = TagAggregatorFactory.CreateTagAggregator<IClassificationTag>(buffer);
+                IgnoredTextViews.Add(textView);
+                tagAggregator = TagAggregatorFactory.CreateTagAggregator<IClassificationTag>(textView);
             } finally {
-                IgnoredBuffers.Remove(buffer);
+                IgnoredTextViews.Remove(textView);
             }
 
             return new StringSqlTagger(ClassificationRegistry, tagAggregator, configuration) as ITagger<T>;

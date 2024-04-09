@@ -10,13 +10,21 @@ This is a separate PostgreSQL in a String extension that targets only Visual Stu
 
 PostgreSQL in a String is a Visual Studio extension that adds highlighting for PostgreSQL syntax in C# string literals.
 
-![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/b09afa46-1529-4f22-b8c4-9ddfec9d6181)
+![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/3f331c52-556c-424f-8900-6a72d699c3bd)
 
-Works with Visual Studio 2019 and Visual Studio 2022. Applies only to C# `.cs` files.
+Works with Visual Studio 2019 and Visual Studio 2022. Project targetting Visual Studio 2019 is located on a [separate branch](https://github.com/JakubJanowski/PostgreSqlInAString/tree/vs2019).
 
-Supports regular quoted strings `""`, verbatim strings `@""`, interpolated strings `$""` and interpolated verbatim strings `$@""`. Does not support C#11 raw string literals yet (I plan on tackling this after .NET 8 comes out).
+Applies only to C# `.cs` files.
 
-Supports parametrized queries. Parameters prefixed with an `@` are colorized in golden.
+Supports parametrized queries. Parameter placeholders prefixed with an `@` (named) or `$` (positional) are colorized in golden.
+
+Supports all string literal types!
+- regular quoted `" "`,
+- verbatim `@" "`,
+- interpolated `$" "`,
+- interpolated verbatim `$@" "`,
+- raw `""" """`
+- interpolated raw `$""" """`.
 
 Correctly handles string escape sequences.
 
@@ -89,6 +97,8 @@ To have the highlighting enabled by default for an entire project, add the follo
 
 This may be useful when you have a separate data access project where most of the strings are database queries.
 
+Adding/changing nodes in `.csproj` might require reopening all already open files from that project for the configuration to take effect.
+
 ## Explanations
 
 Rule configuration comments can contain explanations similar to what ESLint rule configuration comments allow.
@@ -118,11 +128,10 @@ The default highlight colors were selected for VS dark theme but they can be cus
 
 ![image](https://github.com/JakubJanowski/PostgreSqlInAString/assets/19607303/7b5ed2e4-240e-4348-afb8-8b3ed53e0631)
 
-The default colors except for parameter color are a mix of 50% default string color and 50% default SQL token color. This means that the highlighted text will have an orange tint, which is by design, to not overwhelm you when combined with other C# syntax as it is still just a string.
+The default colors except for parameter placeholder color are a mix of 50% default string color and 50% default SQL token color. This means that the highlighted text will have an orange tint, which is by design, to not overwhelm when combined with other C# syntax as it is still just a string literal.
 
 
 # Possible further improvements
-- Support for raw string literals
 - Highlighting of PL/pgSQL in a string in a string
 - Autocompletion
 - Light-mode-friendly color palette and auto-switching between palettes when mode is changed
